@@ -1,0 +1,83 @@
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(rio)
+```
+
+```{r eval=FALSE, message=FALSE}
+
+poverty_rate <- read_csv("poverty.csv") %>% as.data.frame()
+  
+poverty_rate$`Poverty 2008` <- as.numeric(poverty_rate$`Poverty 2008`)
+
+```
+
+
+```{r}
+
+clean_names(poverty_rate)
+
+glimpse(poverty_rate)
+
+names(poverty_rate)
+
+```
+
+What are the average poverty rates for each year across the state?
+
+```{r}
+
+summary(poverty_rate$'Poverty 2008')
+
+summary(poverty_rate$'Poverty 2018')
+
+```
+
+
+
+Which areas saw the most change in poverty rates from 2008 to 2018?
+
+```{r}
+poverty_rate %>% 
+  mutate(diff_2018 = ('Poverty 2018' - 'Poverty 2008')) %>% 
+  mutate(percent_change = ('Poverty 2018' - 'Poverty 2008')/'Poverty 2008') 
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_max(diff_2018)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_min(diff_2018)
+```
+
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_max(percent_change)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_min(percent_change)
+```
+
+Which area of the state had the highest poverty rate in 2018? Overall is the data even across the areas? Are there outliers?
+
+```{r}
+poverty_rate %>%
+  ggplot() +
+  geom_bar(aes(x=reorder(place, n), weight=n))
+
+```
+
+
+
