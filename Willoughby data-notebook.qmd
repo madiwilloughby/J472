@@ -1,0 +1,106 @@
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(rio)
+```
+
+```{r eval=FALSE, message=FALSE}
+
+poverty_rate <- read_csv("poverty.csv") %>% as.data.frame()
+  
+poverty_rate$`Poverty 2008` <- as.numeric(poverty_rate$`Poverty 2008`)
+
+```
+
+
+```{r}
+
+poverty_rate <- clean_names(poverty_rate)
+
+
+clean_names(poverty_rate)
+
+glimpse(poverty_rate)
+
+names(poverty_rate)
+
+```
+
+What are the average poverty rates for each year across the state?
+
+```{r}
+
+summary(poverty_rate$poverty_2008)
+
+summary(poverty_rate$poverty_2018)
+
+```
+
+
+
+Which areas saw the most change in poverty rates from 2008 to 2018?
+
+```{r}
+#Wells comment
+#You're very close! 
+#In order for the new columns to stick, you need to tell R to put them back into the original file. 
+#Use the assign variable and that way new columns are pasted onto the original file
+
+poverty_rate <- poverty_rate %>% 
+  mutate(diff_2018 = (poverty_2018 - poverty_2008)) %>% 
+  mutate(percent_change = (poverty_2018 - poverty_2008)/poverty_2008)
+
+poverty_rate %>% 
+  mutate(diff_2018 = (poverty_2018 - poverty_2008)) %>% 
+  mutate(percent_change = (poverty_2018 - poverty_2008)/poverty_2008) 
+
+
+poverty_rate %>% 
+  mutate(diff_2018 = (poverty_2018 - poverty_2008)) %>% 
+  mutate(percent_change = (poverty_2018 - poverty_2008)/poverty_2008) 
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_max(diff_2018)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_min(diff_2018)
+```
+
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_max(percent_change)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_min(percent_change)
+```
+
+Which area of the state had the highest poverty rate in 2018? Overall is the data even across the areas? Are there outliers?
+
+```{r}
+
+library(ggthemes)
+
+poverty_rate %>%
+  ggplot() +
+  geom_bar(aes(x=reorder(place, n), weight=n)) +
+  coord_flip() + 
+  theme_minimal() + 
+  theme_economist()
+
+```
+
+
+
