@@ -1,0 +1,147 @@
+
+
+Final Notebook & Story Memo
+
+I’m going to focus on comparing the poverty rates in different areas in Maryland over time from 2008 to 2018 for my story. Overall, the data shows that poverty is on the rise in many areas in Maryland with a few exceptions. There are mostly percent increases and positive differences. A notable outlier is Garrett County, which saw both the biggest decrease in percentage points as well as the biggest percent decrease in poverty rate. 
+
+The median of the poverty rates in 2008 was 0.08 and the median of the poverty rates in 2018 was 0.09. The mean for 2008 was 0.0948 and the mean for 2018 was 0.1028. The median increased a full percentage point throughout the ten year period and the mean increased by just below a full percentage point.
+ 
+The highest poverty rate in 2008 was in Somerset County with 23%, it stayed consistent as the highest poverty rate in 2018 with the same number. The lowest poverty rate in 2008 was in Howard County with 4%. The lowest poverty rates in 2018 were in Howard County and Calvert County, both at 5%. 
+ 
+The county with the biggest increase in poverty rate over this time period was Alleghany County. The county with the biggest decrease in poverty rate was Garrett County, with a 0.03 decrease. The biggest percent increase over the time period occurred in Anne Arundel County, with a 4% increase in the poverty rate. The biggest percent decrease over time was also in Garrett County, with a 2% decrease in the poverty rate.
+ 
+The graphic shows that most areas saw percent increases in poverty rates over the 10 year period, with only a few areas seeing a percentage decrease. This helps us visualize the conclusion that this data allows us to come to: Maryland's poverty rates are increasing over longer periods of time. 
+
+Tweets:
+
+1. From 2008 to 2018, the median of the poverty rates in Maryland counties increased from 8% to 9%. Read more here about how these rates have changed over time. (Link)
+
+2. A majority of Maryland counties saw increased poverty rates increased from 2008 to 2018. Here's how much they changed: (R Graphic) (link)
+
+
+
+Step 1: Load the libraries
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(rio)
+library(ggthemes)
+
+```
+
+Step 2: Load the data
+
+```{r eval=FALSE, message=FALSE}
+
+poverty_rate <- read_csv("poverty.csv") %>% as.data.frame()
+  
+poverty_rate$`Poverty 2008` <- as.numeric(poverty_rate$`Poverty 2008`)
+
+```
+
+Step 3: Clean the data
+
+```{r}
+
+poverty_rate <- clean_names(poverty_rate)
+
+
+clean_names(poverty_rate)
+
+glimpse(poverty_rate)
+
+names(poverty_rate)
+
+```
+
+Questions:
+
+What are the average poverty rates for each year across the state?
+
+```{r}
+
+summary(poverty_rate$poverty_2008)
+
+summary(poverty_rate$poverty_2018)
+
+```
+
+Which areas have the highest and lowest poverty rates for each time period?
+
+```{r}
+poverty_rate %>%
+  select(place, poverty_2008) %>% 
+  slice_min(poverty_2008)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, poverty_2008) %>% 
+  slice_max(poverty_2008)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, poverty_2018) %>% 
+  slice_min(poverty_2018)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, poverty_2018) %>% 
+  slice_max(poverty_2018)
+```
+Which areas saw the most change in poverty rates from 2008 to 2018?
+
+```{r}
+
+poverty_rate <- poverty_rate %>% 
+  mutate(diff_2018 = (poverty_2018 - poverty_2008)) %>% 
+  mutate(percent_change = (poverty_2018 - poverty_2008)/poverty_2008)
+
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_max(diff_2018)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_min(diff_2018)
+```
+
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_max(percent_change)
+```
+
+```{r}
+poverty_rate %>%
+  select(place, diff_2018, percent_change) %>% 
+  slice_min(percent_change)
+```
+
+Graphic: Which area of the state had the highest poverty rate in 2018? Overall is the data even across the areas? Are there outliers?
+
+```{r}
+
+poverty_rate %>%
+  ggplot() +
+  geom_bar(aes(x=reorder(place, percent_change),  
+  weight=percent_change)) +
+  coord_flip() + 
+  theme_minimal() + 
+  theme_economist()
+
+```
+Memo:
+
+
+
+
