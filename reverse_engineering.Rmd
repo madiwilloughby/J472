@@ -1,0 +1,168 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+**Reverse Engineering Project**
+
+We will be providing the data work for four topics referened in The Washington Post story "Nearly 250 women have been fatally shot by police since 2015." Below, you will find data for the story's findings relating to Black women killed by police, Black women killed as collateral damage, whether the victim was armed or unarmed, and the locations where women were shot.
+
+
+
+**Load Packages**
+
+```{r}
+
+library(tidyverse)
+library(janitor)
+
+```
+
+**Load Data**
+
+```{r}
+
+fatal_police_shootings <- read.csv("https://raw.githubusercontent.com/washingtonpost/data-police-shootings/master/fatal-police-shootings-data.csv")
+
+#This dataset is a database compiled by The Washington Post. It includes records of every fatal shooting by a police officer in the U.S. since 2015, providing information such as manner of death, race of the victim, and whether the victim was armed.
+
+
+fatal_police_shootings <- fatal_police_shootings %>% 
+  filter(date < as.Date('2020-09-04'))
+
+#I applied this filter to only include dates that were before the publication of the Washington Post's story. This will mean the findings in this dataset should align with the findings in The Post story.
+
+```
+
+The first data entry will explain the rate at which Black women are fatally shot by police. In the story from The Post, the reporters wrote that "Since 2015, Black women have accounted for less than 1 percent of the overall fatal shootings in cases where race was known. But within this small subset, Black women, who are 13 percent of the female population, account for 20 percent of the women shot and killed and 28 percent of the unarmed deaths."
+
+
+```{r}
+
+black_women_deaths <- fatal_police_shootings %>% 
+  filter(race=='B', gender=='F')
+
+black_women_deaths %>% 
+  count()
+
+#n
+#48	
+
+fatal_police_shootings %>% 
+  count()
+#n
+#5610
+
+#This filtered the database to only include Black women. After using the count tool, this shows that 48 Black women have been killed by police from 2015 until the story's publication. That's less than 1 percent of the 5,610 total people killed by police.
+
+women_deaths <- fatal_police_shootings %>% 
+  filter(gender=='F')
+
+women_deaths %>% 
+  count()
+
+#n
+#248	
+
+#This new variable only accounted for women killed by police, which had a value of 248. Since 48 of these women were Black, it shows that roughly 20 percent of women killed by police were Black
+
+unarmed_black_women_deaths <- black_women_deaths %>% 
+  filter(armed=="unarmed")
+
+unarmed_black_women_deaths %>% 
+  count()
+
+#n
+#7
+
+women_deaths %>% 
+  filter(armed=="unarmed") %>% 
+  count()
+
+#n
+#26
+
+#These two counts showed that Black women who were unarmed made up about 28 percent of al the unarmed deaths where the victim was a woman.
+
+```
+
+The next data entry explains whether the victim had documented metal illness. The Post story says "About 31 percent, or 77, of the 247 women fatally shot by police since 2015 had mental health issues, compared to 22 percent of the 5,362 men killed. (separate paragraph but same topic continued) The number of women and men killed in these circumstances may be explained because police overall spend up to one-fifth of their time responding to people with a mental illness, according to a 2015 study from the Treatment Advocacy Center, a Virginia-based nonprofit group for people with severe mental illness."
+
+
+```{r}
+
+women_deaths %>% 
+  count(signs_of_mental_illness)
+
+# False	165			
+# True	83
+
+# This shows 83 of the women killed by police had signs of mental illness. It's interesting how this does not seem to align with the 77 figure that The Post reported.
+
+men_deaths %>% 
+  count(signs_of_mental_illness)
+
+# False	4116			
+# True	1245	
+
+#This shows 1,245 of the 5,361 men killed by police had signs of mental illness, about 23 percent.
+
+```
+
+The third data entry deals with whether the subject was armed. The Post story says "As with fatal police shootings of men, the vast majority of the women killed were armed with a potential weapon at the time, although slightly less often: 89 percent of the women were armed, compared to 91 percent of the men. For both genders, a gun was the most common weapon. Of men killed, 57 percent were armed with a gun and of women, 44 percent. In other cases, women were armed with knives, cars, toy weapons, hammers and hatchets."
+
+```{r}
+
+women_deaths %>% 
+  count(armed)
+
+# ax	3			
+# baseball bat	1			
+# gun	107			
+# gun and knife	2			
+# hammer	2			
+# hatchet	2			
+# knife	44			
+# pair of scissors	2			
+# pellet gun	1	
+# piece of wood	1			
+# pipe	1			
+# sharp object	1			
+# sword	1			
+# Taser	1			
+# toy weapon	14			
+# unarmed	26			
+# undetermined	2			
+# unknown weapon	1			
+# vehicle	34
+
+#This data shows that 26 out of the 248 women killed by police were unarmed, about 11 percent total (this connects to the 89 percent of armed women in The Post story). The stats also show that 109 women were armed with a gun, about 44 percent of all victims.
+
+men_deaths <- fatal_police_shootings %>% 
+  filter(gender=='M')
+
+#This filter created a new dataset of men killed by police, which can be used to determine the percentage of people who were unarmed.
+
+men_deaths %>% 
+  count(armed)
+
+#This count of men showed that 351 men killed by police were unarmed, which would make up about 6.5 percent of the total. Interestingly, the Post story indicated 91 percent of men killed by police were armed. Based on the data, this would have likely been calculated by adding the "unarmed" and "undetermined" sections, which make up 471 out of the 5,361 deaths. The count also showed that 3,123 men were armed with a gun, about 57-58 percent of all men killed by police.
+
+```
+
+The fourth data entry deals with the average age of women and men shot by police. The Post story says "The average age of women and men killed by police was 37, and about one-third were 25 to 34."
+
+```{r}
+
+summary(fatal_police_shootings$age)
+
+#The summary of the age column in the data shows that the mean age of women and men shot by police is 37.13. 
+
+ages <- fatal_police_shootings %>% 
+  filter(age>=25, age<=34) %>% 
+  count()
+
+#There are 1748 entries that fall within the age range described in the story compared to the total, 5610, which is about one third.
+  
+
+```
