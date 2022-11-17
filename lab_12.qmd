@@ -1,0 +1,123 @@
+#lab_12
+Sean Mussenden, Aug 16, 2022
+
+## About this lab
+
+To complete this lab, you need to:
+* write code in empty codeblocks provided to answer questions included (look for **Q**).
+* write out the answer in the form of a complete sentence in the space given (look for **A**).
+
+When you are finished, commit changes and push to your personal GitHub repo, then submit the URL to this document on ELMS.
+
+## Overview
+
+There is one main goal of this lab:
+
+* To apply your knowledge of basic web scraping.
+* To integrate scraped data with other data pulled from API packages.
+
+You will do this by scraping data from the Maryland State Board of Election website, and connecting it with U.S. Census data pulled from the Tidycensus package to answer questions that can be answered with one or more data sets. 
+
+You can find election results here: https://elections.maryland.gov/elections/2022/general_results/
+
+## Load libraries and settings
+
+**Task**: load the tidyverse, tidycensus, rvest and janitor.  Store your Census api key.
+
+```{r}
+library(rvest)
+library(tidyverse)
+library(janitor)
+library(tidycensus)
+
+census_api_key("11c3de50885ac62f20e0e3d234c4e64679206f35", install=TRUE, overwrite = TRUE)
+```
+
+## Questions
+
+**Q1** Which candidate, Dan Cox or Wes Moore, got the lowest percentage of their votes on Election Day? What does that suggest? Write up your answer in a sentence. 
+**A1**
+
+```{r}
+
+#Load the data
+
+gov_url <- "https://elections.maryland.gov/elections/2022/general_results/gen_results_2022_1.html"
+
+#Convert the data to a table
+
+govresults <- gov_url %>%
+  read_html() %>%
+  html_table()
+
+#Find the percentages
+
+#The total number of votes on election day for Cox was 426,607, which is 68.3% of his total votes.
+
+#The total number of votes on election day for Moore was 572,940, which is 48.4% of his total votes.
+
+#Moore had the lower percentage of his voters come in on election day, meaning that more of his voters did mail-in ballots or early voting than Cox's voters.
+
+
+```
+
+**Q2** How many counties did Chris Van Hollen win in Maryland's Senate race? 
+**A2** 
+
+```{r}
+#Load the data
+
+senate_url <- "https://elections.maryland.gov/elections/2022/general_results/gen_detail_results_2022_4_1.html"
+
+#Convert the data to a table and clean the names
+
+senateresults <- senate_url %>%
+  read_html() %>%
+  html_table() 
+
+results <- senateresults[[1]] %>%
+  clean_names() %>%
+  rename(chaffee = 2, hollen = 3) %>%
+  slice(-25) %>%
+  mutate(across(c(2:5), parse_number))
+
+names(senateresults)
+
+#Add a row to show which counties Hollen won.
+
+results %>% 
+  mutate(
+    in_out = case_when(
+      hollen > chaffee ~ "won"
+    ))
+
+#Chris Van Hollen won 10 counties.
+
+```
+
+**Q3** What percentage of the vote did Chris Van Hollen in Maryland's wealthiest county by median income. (You must use the Tidycensus package to answer this question).
+**A3** 
+
+```{r}
+#Load acs5
+
+acs_vars <- load_variables(dataset = "acs5")
+
+acs_vars
+
+acs_vars <- load_variables("acs5")
+
+acs_vars
+
+acs_vars <- load_variables(2020, "acs5", cache = TRUE)
+
+#Find the median household incomes for each county
+
+md <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2020) 
+
+#The county with the highest median household income is Howard County with $124,042. Chris Van Hollen won Howard county with 91,288 votes, with Chris Chaffee getting 37,467. In total, Chris Van Hollen got 70.8% of the vote in that county.
+
+```
