@@ -1,0 +1,370 @@
+**Final Project**
+Eric Neugeboren and Madi Willoughby
+
+For our final project, we will be tracking how wealth in Maryland counties has changed over the past decade. We will also be analyzing the current wealth distribution among the counties, how the wealth changes differ by a county's racial demographics, and how the wealth changes compare to changes in home prices.
+
+Load Libraries:
+```{r}
+
+
+library(tidyverse)
+library(tidycensus)
+library(rvest)
+library(janitor)
+library(leaflet)
+library(tigris)
+library(ggplot2)
+
+census_api_key("d1cec91598a591a7005eebc637decda2109a24de", overwrite =TRUE)
+```
+
+Load Data:
+
+```{r}
+
+#Since it appears that ACS data can only be imported one year at a time, we created separate datasets for each year from 2010-2020 for median household income. Then, we combined the datasets into one, showing the median income in each Maryland county from 2010 to 2020
+
+wealth_2020 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2020) %>% 
+  clean_names() %>% 
+  rename(estimate_2020 = estimate) %>% 
+  select(name, estimate_2020, geoid)
+
+wealth_2019 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2019) %>% 
+  clean_names() %>% 
+  rename(estimate_2019 = estimate) %>% 
+  select(name, estimate_2019, geoid)
+
+wealth_2018 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2018) %>% 
+  clean_names() %>% 
+  rename(estimate_2018 = estimate) %>% 
+  select(name, estimate_2018, geoid)
+
+wealth_2017 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2017) %>% 
+  clean_names() %>% 
+  rename(estimate_2017 = estimate) %>% 
+  select(name, estimate_2017, geoid)
+
+wealth_2016 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2016) %>% 
+  clean_names() %>% 
+  rename(estimate_2016 = estimate) %>% 
+  select(name, estimate_2016, geoid)
+
+wealth_2015 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2015) %>% 
+  clean_names() %>% 
+  rename(estimate_2015 = estimate) %>% 
+  select(name, estimate_2015, geoid)
+
+wealth_2014 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2014) %>% 
+  clean_names() %>% 
+  rename(estimate_2014 = estimate) %>% 
+  select(name, estimate_2014, geoid)
+
+wealth_2013 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2013) %>% 
+  clean_names() %>% 
+  rename(estimate_2013 = estimate) %>% 
+  select(name, estimate_2013, geoid)
+
+wealth_2012 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2012) %>% 
+  clean_names() %>% 
+  rename(estimate_2012 = estimate) %>% 
+  select(name, estimate_2012, geoid)
+
+wealth_2011 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2011) %>% 
+  clean_names() %>% 
+  rename(estimate_2011 = estimate) %>% 
+  select(name, estimate_2011, geoid)
+
+wealth_2010 <- get_acs(geography = "county",
+              variables = c(median_income = "B19013_001"),
+              state = "MD",
+              year = 2010) %>% 
+  clean_names() %>% 
+  rename(estimate_2010 = estimate) %>% 
+  select(name, estimate_2010, geoid)
+
+wealth_2010_2020 <- wealth_2010 %>% 
+  inner_join(wealth_2011, by = "name") %>% 
+  inner_join(wealth_2012, by = "name") %>% 
+  inner_join(wealth_2013, by = "name") %>% 
+  inner_join(wealth_2014, by = "name") %>% 
+  inner_join(wealth_2015, by = "name") %>% 
+  inner_join(wealth_2016, by = "name") %>% 
+  inner_join(wealth_2017, by = "name") %>% 
+  inner_join(wealth_2018, by = "name") %>% 
+  inner_join(wealth_2019, by = "name") %>% 
+  inner_join(wealth_2020, by = "name") %>% 
+  select(name, geoid, estimate_2010, estimate_2011, estimate_2012, estimate_2013, estimate_2014, estimate_2015, estimate_2016, estimate_2017, estimate_2018, estimate_2019, estimate_2020)
+
+            
+#This final dataset shows the ACS estimate of median income in all Maryland counties from 2010 to 2020
+```
+
+
+Question 1: As of 2020, what are the median household incomes of all Maryland counties?
+
+```{r}
+
+maryland_county_boundaries <- counties(state = 24, cb = FALSE, year = 2020) %>% 
+  clean_names()
+
+#We used the Tigris package, which is based on Census data and has shapefiles for all counties
+
+county_wealth_2020 <- maryland_county_boundaries %>% 
+  inner_join(wealth_2020, by = "geoid") %>% 
+  select(geoid, namelsad, estimate_2020, geometry) %>% 
+  rename(name = namelsad)
+
+#This created a new table so that the 2020 median incomes were in the same rows as the shape of each county.
+
+pal<-  colorNumeric(palette = "YlGnBu", domain = NULL)
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(data=county_wealth_2020, 
+              weight = 2, 
+              fillColor = ~pal(estimate_2020), 
+              fillOpacity = 1, 
+              label = paste("Median household income in 2020 was :",(scales::dollar(county_wealth_2020$estimate_2020)), "for",county_wealth_2020$name)) %>%
+  addLegend(pal = pal, values = county_wealth_2020$estimate_2020,  position = "bottomleft", title = "2020 Median Household Income", bins=5)
+
+#This map shows that wealth is pretty concentrated in the middle of the state, which makes sense since those are the more urban areas. Howard, Calvert, and Montgomery counties ranked the highest in median household income in 2020. Somerset and Allegany counties had the lowest median income, followed by Baltimore City (which is interesting given that it is more urban than other areas in the state)
+
+```
+Question 2: How have the median incomes of predominantly white counties changed over the past decade compared to more minority counties?
+
+```{r}
+
+
+white_pop <- get_acs(geography = "county", variables = c(white_pop = "B02008_001"),
+              state = "MD",
+              year = 2020) %>% 
+  clean_names() %>% 
+  rename(total_white = estimate)
+
+total_pop <- get_acs(geography = "county", variables = c(white_pop = "B01001_001"),
+              state = "MD",
+              year = 2020) %>% 
+  clean_names() %>% 
+  rename(total_pop = estimate)
+
+#The two codes above created two new variables: the white populations of all Maryland counties and the total populations of all counties
+
+pct_white <- white_pop %>% 
+  inner_join(total_pop, by = "geoid") %>% 
+  mutate(pct_white = total_white / total_pop *100) %>% 
+  select(name.x, geoid, pct_white) %>% 
+  rename(name = name.x) %>% 
+  mutate(predom_white = case_when(
+    pct_white > 50 ~ "YES",
+    pct_white <= 50 ~ "NO"
+  )) %>% 
+  arrange(desc(pct_white))
+
+#This new dataset accounts for the percentage of white residents in all Maryland counties. There was also a new variable created, which labels predominantly white counties (classified as more than 50%) and non-predominantly white counties. There were only three counties in Maryland that were not predominantly white.
+
+wealth_change_by_race <- pct_white %>% 
+  inner_join(wealth_2010_2020, by = "geoid") %>% 
+  select(name.x, geoid, estimate_2010, estimate_2020, pct_white, predom_white) %>% 
+  mutate(change_2010_2020 = (estimate_2020 - estimate_2010) / estimate_2010 *100) %>% 
+  clean_names()
+
+#This created a new dataset that joined together the demographic dataset with the data on median household incomes from 2010 to 2020. This allowed us to analyze the income changes based on a county's demographics.
+
+wealth_change_by_race %>% 
+  filter(predom_white == "YES") %>% 
+  summary(change_2010_2020)
+
+# change_2010_2020 
+#  Min.   : 0.4133  
+#  1st Qu.:18.9431  
+#  Median :19.8438  
+#  Mean   :19.3025  
+#  3rd Qu.:22.3916  
+#  Max.   :31.0011  
+
+wealth_change_by_race %>% 
+  filter(predom_white == "NO") %>% 
+  summary(change_2010_2020)
+
+#  change_2010_2020
+#  Min.   :16.72   
+#  1st Qu.:19.40   
+#  Median :22.08   
+#  Mean   :23.75   
+#  3rd Qu.:27.26   
+#  Max.   :32.44 
+
+#These two summary tables showed that the three counties that were not predominantly white (Charles, Prince George's, and Baltimore City)  had larger wealth increases than predominantly white counties from 2010 to 2020. The average increase was almost four percentage points higher (23.75% vs. 19.84%)
+
+no_predom_white_geography <- maryland_county_boundaries %>% 
+  inner_join(wealth_change_by_race, by = "geoid") %>% 
+  filter(predom_white == "NO") %>% 
+  clean_names()
+  
+predom_white_geography <- maryland_county_boundaries %>% 
+  inner_join(wealth_change_by_race, by = "geoid") %>% 
+  filter(predom_white == "YES") %>% 
+  clean_names()
+
+ggplot() +
+  geom_sf(data=maryland_county_boundaries) +
+  geom_sf(data = no_predom_white_geography, aes(fill=change_2010_2020)) +
+    labs(title = "Median Household Income Changes in Non-Predominantly White Counties")
+
+
+ggplot() +
+  geom_sf(data=maryland_county_boundaries) +
+  geom_sf(data = predom_white_geography, aes(fill=change_2010_2020)) +
+  labs(title = "Median Household Income Changes in Predominantly White Counties")
+
+#These two maps show income changes in predominantly white counties and counties that aren't predominantly white. It shows that while the average income change was higher in the three counties that weren't predominantly white, several predominantly white counties outpaced Prince George's and Charles counties. This connects to the data that shows predominantly white counties make up the second through sixth highest changes in median income. So, while predominantly white counties on average fared worse than other counties, the specifics show many predominantly white counties did better. This could mean that average is not the best measure of income changes in this context, especially because there are only three counties that aren't predominantly white and 21 counties that are predominantly white.
+
+```
+Question 3: How have the median incomes in more populated counties changed compared to smaller counties?
+
+```{r}
+
+
+summary(total_pop$total_pop)
+
+#  Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  19456   46894  108202  251568  272568 1047661 
+
+#This summary table gives us the average county size in Maryland. We will use this to determine median income changes in lower and higher populated counties (with lower populated being lower than the statewide mean population, and vice versa)
+
+
+total_pop <- total_pop %>% 
+  mutate(pop_size = case_when(
+    total_pop > 251568 ~ "above_average",
+    total_pop < 251568 ~ "below_average"))
+
+#This revised table shows eight counties with above average population, and 16 counties with below average population
+
+wealth_change_by_pop <- total_pop %>% 
+  inner_join(wealth_2010_2020, by = "geoid") %>%
+  mutate(change_2010_2020 = (estimate_2020 - estimate_2010) / estimate_2010 *100) %>% 
+  select(name.x, change_2010_2020, pop_size, geoid) %>% 
+  rename(name = name.x)
+
+#This combined the datasets of wealth changes and county population, allowing us to analyze if bigger or smaller populations saw greater wealth changes
+
+wealth_change_by_pop %>% 
+  filter(pop_size == "above_average") %>% 
+  summary(change_2010_2020)
+
+# pop_size
+# Min.   :19.75        
+# 1st Qu.:21.58
+# Median :22.58 
+# Mean   :23.31                      
+# 3rd Qu.:23.37                      
+# Max.   :32.44                      
+
+wealth_change_by_pop %>% 
+  filter(pop_size == "below_average") %>% 
+  summary(change_2010_2020)
+
+# pop_size
+# Min.   : 0.4133        
+# 1st Qu.:16.8844 
+# Median :19.0728
+# Mean   :18.1324                     
+#3rd Qu.:20.5554                     
+# Max.   :31.0011 
+
+#This shows more populated counties saw greater increases in median income than counties with a below average population. The average increase among counties with an above average population was 23.31%, compared to 18.13% for counties with a below average population.
+```
+
+Question 4: How have the changes in median household income over the past decade compared to the housing price index?
+
+```{r}
+#According to the U.S. Federal Housing Finance Agency, Maryland's house price index was 426.75 in Q1 of 2010 and the house price index in Q1 of 2020 was 492.30. This shows a 15.4% increase.
+
+#Source: https://fred.stlouisfed.org/series/MDSTHPI 
+
+#Load the data by county.
+
+house_price_index_md_counties <- rio::import("https://docs.google.com/spreadsheets/d/1UPd5M5LlXUvBcxYXBpHsp30L9P_h1r3A6rMG8QOvoh0/edit?usp=sharing", which = "house_price_index_md")
+
+house_price_index_md_counties$geoid <- as.numeric(house_price_index_md_counties$geoid)
+
+#The largest increase in house price in Prince George's County with a 40.13%, followed by Frederick County with a 20.63% increase and then Montgomery County with a 18.70% increase.
+
+#This code shows the percentage change in median household income from 2010 to 2020 and the difference between the two years for each county.
+
+income_pct_change <- wealth_2010_2020 %>% 
+  select(geoid, name, estimate_2010, estimate_2020) %>%
+  mutate(pct_change_2010_to_2020 = (estimate_2020-estimate_2010)/estimate_2010) %>% 
+  mutate(difference_2010_to_2020 = (estimate_2020-estimate_2010))
+
+#Summarize the #SPELLING# percntage changes for each county.
+
+summary(income_pct_change$pct_change_2010_to_2020)
+
+#Min.: 0.004133
+#1st Qu.: 0.186719
+#Median: 0.199606
+#Mean: 0.198582
+#3rd Qu.: 0.225650
+#Max.: 0.324430
+
+#With the median percentage change of median household incomes in each county being about 20% and the first quartile being about 18.7%, the median household incomes mostly exceeded the increase in the housing price index of 15.4%.
+
+
+```
+
+
+Question 5: Where were the highest increases in median household income compared to where median household income is already at its highest. 
+
+```{r}
+
+#This code shows the percentage change in median household income from 2010 to 2020 for each county sorted from higest to lowest. 
+
+income_pct_change <- wealth_2010_2020 %>% 
+  select(geoid, name, estimate_2010, estimate_2020) %>%
+  mutate(pct_change_2010_to_2020 = (estimate_2020-estimate_2010)/estimate_2010) %>% 
+  arrange(desc(pct_change_2010_to_2020))
+
+#The counties with the highest percentage changes in median household income were Baltimore city and Allegany County with 32.4% and 31%. The lowest percentage changes were in Somerset County and Caroline County with about 6% and  0.4%.
+
+#This code shows the estimated wealth for each county sorted from highest to lowest. 
+
+ordered_county_wealth_2020 <- county_wealth_2020 %>% 
+  arrange(desc(estimate_2020))
+
+#The counties with the highest wealth in 2020 were Howard County and Calvert County with $124,042 and $112,696. The counties with the lowest wealth in 2020 were Allegany County and Somerset County with $49,449 and $44,980. 
+
+#On the higher end of the scale, Calvert County was the second highest for median household income in 2020 and had the third highest percentage change. Anne Arundel was fifth highest on the list for county median household income in 2020 and had the fourth highest percentage change. Frederick County was also the sixth highest in terms of median household income and had the fifth highest percentage change. However, other counties with the highest median household incomes in 2020, Howard County, Montgomery County and Charles County did not appear until 11th on the list for highest percentage change. 
+
+#On the lower end of the scale, Somerset County was the second lowest percentage change and the lowest median household income in 2020. Allegany had the second lowest median household income in 2020 but also was the second highest percentage change from 2010 to 2020. Baltimore city had the third lowest median household income in 2020 but was the highest percentage change from 2010 to 2020. Dorchester County and Garrett County follow in terms of lowest median household income in 2020 and were numbers 20 and 16 in terms of percentage change from 2010 to 2020. 
+```
